@@ -22,7 +22,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ *modificar para que pueda enviar cualquier archivo y este sea visiblle par ebrir en el navegador
+ *cuando se de el nombre en el URL se debe de enviar el archivo o solo modificar el index.html
+ *clase que atendera al navegador
  * @author rnavarro
  */
 public class HTTPService implements Runnable {
@@ -68,24 +70,23 @@ public class HTTPService implements Runnable {
                     //cuando sea en blanco(termine) se saldra en while
                 }
             }
-            if(direc.endsWith(".jpg")||direc.endsWith(".png") ||direc.endsWith(".ico") || direc.endsWith(".gif")) {
+            //para identificar el archivo
+            File fi = new File(direc);
+            if (fi.exists() == false) {
+                error404();
+            }if (direc.endsWith(".ico") || direc.endsWith(".jpg") || direc.endsWith(".gif") || direc.endsWith(".png")) {
                 leerImagen(direc);
-            }else if(direc.endsWith(".html")){
-                leerDocHtml(direc);
-            }else if(direc.endsWith("")){
-                LOG.info("FORM");
-                doGet(inputLine);
+            }else{
+                leerHtml(fi);
             }
-            //para obtener el archivo y sacar el tamaño de los bytes
             
-           
-          
+            //lee el archivo web, el contenido de nuestra web
+            
             System.out.println("El archivo es: ");
             System.out.println(direc);
             
             System.out.println("done");
             clientSocket.close();//cierra conexion con el navegador
-            
         } catch (IOException ex) {
             System.out.println("Error en la conexion");
         } finally {
@@ -97,9 +98,9 @@ public class HTTPService implements Runnable {
         }
     }
     
-    public void leerDocHtml(String archivo){
-        File fi = new File(archivo);
-        try (FileReader file = new FileReader(fi)){
+    public void leerHtml(File fi){
+        FileReader file;
+        try{file = new FileReader(fi);
             
             //encabezado de respuesta
             out.println("HTTP/1.1 200 OK"); //protocolo HTTP ejecutar
@@ -124,7 +125,7 @@ public class HTTPService implements Runnable {
         }
     }
     public void leerImagen(String archivo){
-                    //enviar nuestros datos
+            //enviar nuestros datos
             //encabezado de respuesta
             File fi = new File(archivo);
             out.println("HTTP/1.1 200 OK");//protocolo HTTP  ejecutar
@@ -161,30 +162,32 @@ public class HTTPService implements Runnable {
         }
      
     }
-    public void notEncontrado(String archivo){
+    public void error404(){
     
-        File f = new File(archivo);
-        if(archivo.contains("404.html")){
-            out.println("HTTP/1.1 404 Not Found");
-            out.println("Content-Type: text/html; charset=utf-8");
-            out.println("Content-Length : " + f.length());
+        File fi = new File("404.html");
+        FileReader file;
+        try{file = new FileReader(fi);
+            
+            //encabezado de respuesta
+            out.println("HTTP/1.1 200 OK");//protocolo HTTP  ejecutar
+            out.println("Content-Type: text/html; charset=utf-8");//tipo de datos que enviara el servidor al navegador
+            //out.println("Content-Length: " + f.length); el f.length regresa la cantidad de bytes del archivo
+            out.println("Content-Length: " + fi.length());//contenido de caracteres del archivo a enviar o la cantidad de bytes
             out.println();
-            FileReader file = null;
-            try {
-                file = new FileReader(f);
-
-                int data;
-
-                while ((data = file.read()) != -1) {
-                    out.write(data);
-                    out.flush();
-                }
-                file.close();
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(HTTPService.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(HTTPService.class.getName()).log(Level.SEVERE, null, ex);
+            
+            int data;
+                //se envia byte por byte el archivo nuestro
+            while( (data = file.read()) != -1 ) {
+                out.write(data);
+                     
+                    //System.out.println(".");
             }
+            out.flush();
+            file.close();
+        } catch(FileNotFoundException e){
+            System.err.println("Error " + e.getMessage());
+        } catch (IOException ex) {
+            Logger.getLogger(HTTPService.class.getName()).log(Level.SEVERE, null, ex);
         }
         
     }
@@ -214,19 +217,5 @@ public class HTTPService implements Runnable {
             }
         }      
     }
-    private void doGet(String commandLine) {
-        StringBuilder response = new StringBuilder();
-        System.out.println(commandLine);
-
-        String query = commandLine.substring(commandLine.lastIndexOf('?') + 1,
-                commandLine.lastIndexOf(' '));
-
-        System.out.println(query);
-
-        String[] tokens = query.split("\\&+");
-
-        for (int i = 0; i < tokens.length; i++) {
-            System.out.println(tokens[i]);
-        }
-    }    
+     
 }
